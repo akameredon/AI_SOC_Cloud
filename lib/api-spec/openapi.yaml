@@ -3,13 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AI-SOC Cloud API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: cameras
+    description: Camera management
+  - name: events
+    description: Security events
+  - name: alerts
+    description: Alert management
+  - name: zones
+    description: Detection zones
+  - name: alertRules
+    description: Alert rules engine
+  - name: dashboard
+    description: Dashboard summary data
+  - name: incidents
+    description: Incident reports
+
 paths:
   /healthz:
     get:
@@ -24,6 +39,553 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Cameras ────────────────────────────────────────────────────────────────
+  /cameras:
+    get:
+      operationId: listCameras
+      tags: [cameras]
+      summary: List all cameras
+      responses:
+        "200":
+          description: List of cameras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Camera"
+    post:
+      operationId: createCamera
+      tags: [cameras]
+      summary: Register a new camera
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CameraInput"
+      responses:
+        "201":
+          description: Camera created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Camera"
+
+  /cameras/{id}:
+    get:
+      operationId: getCamera
+      tags: [cameras]
+      summary: Get camera by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Camera details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Camera"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCamera
+      tags: [cameras]
+      summary: Update camera
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CameraUpdate"
+      responses:
+        "200":
+          description: Updated camera
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Camera"
+    delete:
+      operationId: deleteCamera
+      tags: [cameras]
+      summary: Delete camera
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /cameras/{id}/test:
+    post:
+      operationId: testCameraConnection
+      tags: [cameras]
+      summary: Test camera stream connection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionTestResult"
+
+  # ── Zones ──────────────────────────────────────────────────────────────────
+  /zones:
+    get:
+      operationId: listZones
+      tags: [zones]
+      summary: List all detection zones
+      responses:
+        "200":
+          description: List of zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Zone"
+    post:
+      operationId: createZone
+      tags: [zones]
+      summary: Create a detection zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneInput"
+      responses:
+        "201":
+          description: Zone created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zone"
+
+  /zones/{id}:
+    patch:
+      operationId: updateZone
+      tags: [zones]
+      summary: Update detection zone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneUpdate"
+      responses:
+        "200":
+          description: Updated zone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zone"
+    delete:
+      operationId: deleteZone
+      tags: [zones]
+      summary: Delete zone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Events ─────────────────────────────────────────────────────────────────
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List security events
+      parameters:
+        - name: cameraId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: eventType
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SecurityEvent"
+    post:
+      operationId: ingestEvent
+      tags: [events]
+      summary: Ingest AI detection event (from Frigate/YOLO)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Event ingested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityEvent"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityEvent"
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update event status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityEvent"
+
+  # ── Alerts ─────────────────────────────────────────────────────────────────
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+    patch:
+      operationId: updateAlert
+      tags: [alerts]
+      summary: Acknowledge or dismiss alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertUpdate"
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  # ── Alert Rules ─────────────────────────────────────────────────────────────
+  /alert-rules:
+    get:
+      operationId: listAlertRules
+      tags: [alertRules]
+      summary: List alert rules
+      responses:
+        "200":
+          description: List of alert rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertRule"
+    post:
+      operationId: createAlertRule
+      tags: [alertRules]
+      summary: Create alert rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertRuleInput"
+      responses:
+        "201":
+          description: Alert rule created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertRule"
+
+  /alert-rules/{id}:
+    patch:
+      operationId: updateAlertRule
+      tags: [alertRules]
+      summary: Update alert rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertRuleUpdate"
+      responses:
+        "200":
+          description: Updated alert rule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertRule"
+    delete:
+      operationId: deleteAlertRule
+      tags: [alertRules]
+      summary: Delete alert rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Incidents ───────────────────────────────────────────────────────────────
+  /incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      summary: List incident reports
+      responses:
+        "200":
+          description: List of incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incident"
+    post:
+      operationId: createIncident
+      tags: [incidents]
+      summary: Create incident report from events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentInput"
+      responses:
+        "201":
+          description: Incident created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+
+  /incidents/{id}:
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      summary: Get incident report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Incident details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+    patch:
+      operationId: updateIncident
+      tags: [incidents]
+      summary: Update incident
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentUpdate"
+      responses:
+        "200":
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+
+  # ── Dashboard / Analytics ───────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/event-timeline:
+    get:
+      operationId: getEventTimeline
+      tags: [dashboard]
+      summary: Get event counts over time (last 24h)
+      responses:
+        "200":
+          description: Timeline buckets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimelineBucket"
+
+  /dashboard/event-breakdown:
+    get:
+      operationId: getEventBreakdown
+      tags: [dashboard]
+      summary: Get event count by type
+      responses:
+        "200":
+          description: Breakdown by event type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventTypeCount"
+
+  /dashboard/camera-health:
+    get:
+      operationId: getCameraHealth
+      tags: [dashboard]
+      summary: Get camera health overview
+      responses:
+        "200":
+          description: Camera health summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CameraHealthStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +596,277 @@ components:
       required:
         - status
 
+    # ── Camera ──────────────────────────────────────────────────────────────
+    Camera:
+      type: object
+      required: [id, name, location, rtspUrl, status, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        location: { type: string }
+        rtspUrl: { type: string }
+        status: { type: string, enum: [online, offline, error, unknown] }
+        protocol: { type: string, enum: [rtsp, onvif, http] }
+        aiEnabled: { type: boolean }
+        snapshotUrl: { type: ["string", "null"] }
+        lastSeenAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    CameraInput:
+      type: object
+      required: [name, location, rtspUrl]
+      properties:
+        name: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        rtspUrl: { type: string, minLength: 1 }
+        protocol: { type: string, enum: [rtsp, onvif, http] }
+        aiEnabled: { type: boolean }
+
+    CameraUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        location: { type: string }
+        rtspUrl: { type: string }
+        status: { type: string, enum: [online, offline, error, unknown] }
+        protocol: { type: string, enum: [rtsp, onvif, http] }
+        aiEnabled: { type: boolean }
+        snapshotUrl: { type: ["string", "null"] }
+
+    ConnectionTestResult:
+      type: object
+      required: [success, message, latencyMs]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        latencyMs: { type: ["integer", "null"] }
+
+    # ── Zone ────────────────────────────────────────────────────────────────
+    Zone:
+      type: object
+      required: [id, name, cameraId, type, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        cameraId: { type: integer }
+        type: { type: string, enum: [restricted, monitored, safe] }
+        coordinates: { type: ["string", "null"] }
+        active: { type: boolean }
+        createdAt: { type: string }
+
+    ZoneInput:
+      type: object
+      required: [name, cameraId, type]
+      properties:
+        name: { type: string, minLength: 1 }
+        cameraId: { type: integer }
+        type: { type: string, enum: [restricted, monitored, safe] }
+        coordinates: { type: string }
+        active: { type: boolean }
+
+    ZoneUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [restricted, monitored, safe] }
+        coordinates: { type: string }
+        active: { type: boolean }
+
+    # ── Security Event ────────────────────────────────────────────────────────
+    SecurityEvent:
+      type: object
+      required: [id, cameraId, eventType, status, confidence, riskScore, timestamp, createdAt]
+      properties:
+        id: { type: integer }
+        externalId: { type: ["string", "null"] }
+        cameraId: { type: integer }
+        cameraName: { type: ["string", "null"] }
+        cameraLocation: { type: ["string", "null"] }
+        eventType:
+          type: string
+          enum: [intrusion, loitering, motion, vehicle, person, tamper, object_left, crowd]
+        status:
+          type: string
+          enum: [new, acknowledged, resolved, false_positive]
+        confidence: { type: number }
+        riskScore: { type: integer }
+        zone: { type: ["string", "null"] }
+        snapshotUrl: { type: ["string", "null"] }
+        videoClipUrl: { type: ["string", "null"] }
+        aiExplanation: { type: ["string", "null"] }
+        timestamp: { type: string }
+        createdAt: { type: string }
+
+    EventInput:
+      type: object
+      required: [cameraId, eventType, confidence, riskScore, timestamp]
+      properties:
+        externalId: { type: string }
+        cameraId: { type: integer }
+        eventType:
+          type: string
+          enum: [intrusion, loitering, motion, vehicle, person, tamper, object_left, crowd]
+        confidence: { type: number }
+        riskScore: { type: integer }
+        zone: { type: string }
+        snapshotUrl: { type: string }
+        videoClipUrl: { type: string }
+        aiExplanation: { type: string }
+        timestamp: { type: string }
+
+    EventUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [acknowledged, resolved, false_positive]
+        aiExplanation: { type: string }
+
+    # ── Alert ────────────────────────────────────────────────────────────────
+    Alert:
+      type: object
+      required: [id, eventId, channel, status, message, createdAt]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        channel: { type: string, enum: [in_app, email, sms, whatsapp] }
+        status: { type: string, enum: [pending, sent, acknowledged, dismissed] }
+        message: { type: string }
+        recipient: { type: ["string", "null"] }
+        sentAt: { type: ["string", "null"] }
+        acknowledgedAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AlertUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [acknowledged, dismissed] }
+
+    # ── Alert Rule ────────────────────────────────────────────────────────────
+    AlertRule:
+      type: object
+      required: [id, name, eventType, channels, active, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        eventType:
+          type: string
+          enum: [intrusion, loitering, motion, vehicle, person, tamper, object_left, crowd, any]
+        minRiskScore: { type: integer }
+        channels: { type: string }
+        delaySeconds: { type: integer }
+        active: { type: boolean }
+        createdAt: { type: string }
+
+    AlertRuleInput:
+      type: object
+      required: [name, eventType, channels]
+      properties:
+        name: { type: string, minLength: 1 }
+        eventType:
+          type: string
+          enum: [intrusion, loitering, motion, vehicle, person, tamper, object_left, crowd, any]
+        minRiskScore: { type: integer }
+        channels: { type: string }
+        delaySeconds: { type: integer }
+        active: { type: boolean }
+
+    AlertRuleUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        eventType:
+          type: string
+          enum: [intrusion, loitering, motion, vehicle, person, tamper, object_left, crowd, any]
+        minRiskScore: { type: integer }
+        channels: { type: string }
+        delaySeconds: { type: integer }
+        active: { type: boolean }
+
+    # ── Incident ───────────────────────────────────────────────────────────────
+    Incident:
+      type: object
+      required: [id, title, severity, status, eventCount, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [open, investigating, resolved, closed] }
+        eventCount: { type: integer }
+        cameraIds: { type: ["string", "null"] }
+        aiSummary: { type: ["string", "null"] }
+        resolvedAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    IncidentInput:
+      type: object
+      required: [title, severity]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        eventIds: { type: string }
+        cameraIds: { type: string }
+
+    IncidentUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [open, investigating, resolved, closed] }
+        aiSummary: { type: string }
+
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required:
+        - totalCameras
+        - onlineCameras
+        - offlineCameras
+        - totalEventsToday
+        - activeAlerts
+        - openIncidents
+        - criticalEvents
+        - avgRiskScore
+      properties:
+        totalCameras: { type: integer }
+        onlineCameras: { type: integer }
+        offlineCameras: { type: integer }
+        totalEventsToday: { type: integer }
+        activeAlerts: { type: integer }
+        openIncidents: { type: integer }
+        criticalEvents: { type: integer }
+        avgRiskScore: { type: number }
+
+    TimelineBucket:
+      type: object
+      required: [hour, count]
+      properties:
+        hour: { type: string }
+        count: { type: integer }
+        critical: { type: integer }
+
+    EventTypeCount:
+      type: object
+      required: [eventType, count]
+      properties:
+        eventType: { type: string }
+        count: { type: integer }
+        percentage: { type: number }
+
+    CameraHealthStatus:
+      type: object
+      required: [id, name, location, status, eventCount]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        location: { type: string }
+        status: { type: string }
+        eventCount: { type: integer }
+        lastSeenAt: { type: ["string", "null"] }
+        snapshotUrl: { type: ["string", "null"] }
