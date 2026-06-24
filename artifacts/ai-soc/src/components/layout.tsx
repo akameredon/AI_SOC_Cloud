@@ -8,14 +8,16 @@ import {
   Map, 
   Settings2,
   ShieldAlert,
-  Radio
+  Radio,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLiveStream } from "@/hooks/useLiveStream";
 import { useState, useEffect } from "react";
+import { useClerk, useUser } from "@clerk/react";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Cameras", href: "/cameras", icon: Camera },
   { name: "Events", href: "/events", icon: Activity },
   { name: "Alerts", href: "/alerts", icon: Bell },
@@ -23,6 +25,8 @@ const navigation = [
   { name: "Zones", href: "/zones", icon: Map },
   { name: "Rules Engine", href: "/alert-rules", icon: Settings2 },
 ];
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function LiveClock() {
   const [time, setTime] = useState(() => new Date().toISOString().split("T")[1].split(".")[0]);
@@ -37,7 +41,16 @@ function LiveClock() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { signOut } = useClerk();
+  const { user } = useUser();
   useLiveStream();
+
+  const initials = user
+    ? (user.firstName?.[0] ?? user.emailAddresses?.[0]?.emailAddress?.[0] ?? "U").toUpperCase()
+    : "OP";
+  const displayName = user
+    ? (user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.emailAddresses?.[0]?.emailAddress ?? "Operator")
+    : "Operator";
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/30">
@@ -52,7 +65,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location === item.href || (item.href === "/dashboard" && location === "/");
             return (
               <Link key={item.name} href={item.href}>
                 <div
@@ -78,23 +91,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
         
         <div className="p-4 border-t border-sidebar-border bg-sidebar-accent/10">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
-              <span className="text-primary font-mono text-xs font-bold">OP</span>
+            <div className="h-8 w-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0">
+              <span className="text-primary font-mono text-xs font-bold">{initials}</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-mono font-bold text-sidebar-foreground">Operator 01</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs font-mono font-bold text-sidebar-foreground truncate">{displayName}</span>
               <span className="text-[10px] text-primary flex items-center gap-1 font-mono">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
                 SECURE CONN
               </span>
             </div>
+            <button
+              onClick={() => signOut({ redirectUrl: basePath || "/" })}
+              className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background">
-        {/* Subtle grid pattern background */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" 
              style={{ backgroundImage: 'radial-gradient(hsl(var(--primary)) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
              
