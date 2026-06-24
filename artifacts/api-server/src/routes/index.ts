@@ -7,6 +7,7 @@ import alertsRouter from "./alerts";
 import alertRulesRouter from "./alertRules";
 import incidentsRouter from "./incidents";
 import dashboardRouter from "./dashboard";
+import streamRouter from "./stream";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(alertsRouter);
 router.use(alertRulesRouter);
 router.use(incidentsRouter);
 router.use(dashboardRouter);
+router.use(streamRouter);
 
 export default router;

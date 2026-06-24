@@ -7,9 +7,12 @@ import {
   LayoutDashboard, 
   Map, 
   Settings2,
-  ShieldAlert
+  ShieldAlert,
+  Radio
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLiveStream } from "@/hooks/useLiveStream";
+import { useState, useEffect } from "react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -21,8 +24,20 @@ const navigation = [
   { name: "Rules Engine", href: "/alert-rules", icon: Settings2 },
 ];
 
+function LiveClock() {
+  const [time, setTime] = useState(() => new Date().toISOString().split("T")[1].split(".")[0]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(new Date().toISOString().split("T")[1].split(".")[0]);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="text-foreground">{time} UTC</span>;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  useLiveStream();
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/30">
@@ -79,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background">
-        {/* Subtle grid pattern background for tech vibe */}
+        {/* Subtle grid pattern background */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" 
              style={{ backgroundImage: 'radial-gradient(hsl(var(--primary)) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
              
@@ -91,9 +106,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </h1>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-green-400 border border-green-400/30 bg-green-400/5 px-2 py-1 rounded">
+              <Radio className="h-3 w-3 animate-pulse" />
+              <span className="tracking-wider">LIVE</span>
+            </div>
             <div className="flex items-center gap-2">
               <span>SYS.TIME:</span>
-              <span className="text-foreground">{new Date().toISOString().split('T')[1].split('.')[0]} UTC</span>
+              <LiveClock />
             </div>
           </div>
         </header>
